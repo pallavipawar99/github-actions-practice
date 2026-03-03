@@ -22,4 +22,4 @@ jobs:
         run: ls -la
 
       - name: print runnner os
-        run: run: echo "Runner OS is $RUNNER_OS"
+        run: echo "Runner OS is $RUNNER_OS"
