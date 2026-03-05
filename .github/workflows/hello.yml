@@ -1,6 +1,6 @@
 name: hello workflow
 on:
-  push:
+  workflow_dispatch:
 jobs:
   greet:
     runs-on: ubuntu-latest
