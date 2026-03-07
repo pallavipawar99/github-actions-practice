@@ -24,3 +24,12 @@ jobs:
                 hostname
                 whoami
               shell: cmd
+
+    macos-job:
+        runs-on: macos-latest
+        steps:
+            - name: Print system info
+              run: |
+                echo "OS: $RUNNER_OS"
+                hostname
+                whoami
