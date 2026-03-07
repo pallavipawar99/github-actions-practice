@@ -1,0 +1,26 @@
+name: GitHub Hosted Runners Test
+
+on:
+    push:
+
+jobs:
+    ubuntu-job:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: print system info
+              run: |
+                echo "OS: $RUNNER_OS"
+                hostname
+                whoami
+    
+    windows-job:
+        runs-on: windows-latest
+
+        steps:
+            - name: print system info
+              run: |
+                echo OS: %RUNNER_OS%
+                hostname
+                whoami
+              shell: cmd
