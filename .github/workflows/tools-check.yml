@@ -15,8 +15,8 @@ jobs:
             - name: check version of python3
               run: python3 --version
 
-            - name: check version of node
-              run: node --version
+            # - name: check version of node
+            #   run: node --version
 
             - name: check version of git
               run: git --version
