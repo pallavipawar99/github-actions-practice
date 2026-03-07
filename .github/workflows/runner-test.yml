@@ -11,7 +11,7 @@ jobs:
             - name: print system info
               run: |
                 echo "OS: $RUNNER_OS"
-                hostname
+                echo "$hostname"
                 whoami
     
     windows-job:
