@@ -34,4 +34,4 @@ jobs:
       - name: Print artifact contents
         run: |
           echo "Reading artifact:"
-          cat report.txt
+          cat build-report
