@@ -1,5 +1,6 @@
 name: "Setup and Greet"
 description: "Prints a greeting and shows date + OS"
+
 inputs:
   name:
     description: "Person to greet"
@@ -8,6 +9,7 @@ inputs:
     description: "Language for greeting"
     required: false
     default: "en"
+
 outputs:
   greeted:
     description: "Indicates if greeting was printed"

@@ -9,16 +9,16 @@ jobs:
   greet-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run custom greet action
-        uses: ./.github/actions/setup-and-greet/action.yml
+        id: run-greet-action
+        uses: ./.github/actions/setup-and-greet
         with:
           name: "Alice"
           language: "fr"
 
       - name: Show greeted output
-        run: |
+        run: | 
             echo "Greeted: ${{ steps.run-greet-action.outputs.greeted }}"
-        id: run-greet-action
