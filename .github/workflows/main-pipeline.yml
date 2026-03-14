@@ -5,20 +5,25 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    # types: [opened, synchronize]
+  schedule:
+    - cron: '0 */12 * * *'  # Runs every 12 hours
+  workflow_dispatch:       # Allows manual testing
 
 jobs:
-  # 1. First, run your Build & Test
+  # --- CI/CD SECTION (Runs on Push/PR) ---
+
+  # 1. Run Build & Test (Required for both Push and PR)
   call-build-and-test:
+    if: github.event_name != 'schedule'
     uses: ./.github/workflows/reusable-build-test.yml
     with:
       python_version: '3.10'
       run_tests: true
 
-  # 2. Then, Build & Push Docker Image (Only if tests pass)
+  # 2. Build & Push Docker Image (ONLY on Push to main, NOT on PR)
   deploy-docker:
     needs: call-build-and-test
-    if: needs.call-build-and-test.outputs.test_result == 'passed'
+    if: github.event_name == 'push' && needs.call-build-and-test.outputs.test_result == 'passed'
     uses: ./.github/workflows/reusable-docker.yml
     with:
       image_name: 'fastapi-capstone'
@@ -27,13 +32,44 @@ jobs:
       docker_username: ${{ vars.DOCKER_USERNAME }}
       docker_token: ${{ secrets.DOCKER_TOKEN }}
 
-  # 3. Optional: Check the final output
+  # 3. Production Deployment (Requires Manual Approval in GitHub Environments)
   deploy-prod:
     needs: deploy-docker
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    environment: production  # This triggers protection rules/manual approval
+    environment: production
     steps:
-      - name: Deploying to Production
+      - name: Final Production Deploy
         run: |
           echo "Deploying image: ${{ needs.deploy-docker.outputs.image_url }} to production"
           echo "Deployment status: Success"
+
+  # --- HEALTH CHECK SECTION (Runs on Schedule or Manual Trigger) ---
+
+  health-check:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Container
+        run: |
+          docker run -d --name app-check -p 8000:8000 ${{ vars.DOCKER_USERNAME }}/fastapi-capstone:latest
+          sleep 5
+
+      - name: Verify Health
+        id: check
+        run: |
+          if curl -s --fail http://localhost:8000/health | grep -q "ok"; then
+            echo "status=PASSED" >> $GITHUB_OUTPUT
+          else
+            echo "status=FAILED" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Create Summary Report
+        if: always()
+        run: |
+          echo "## Health Check Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** ${{ vars.DOCKER_USERNAME }}/fastapi-capstone:latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ steps.check.outputs.status || 'FAILED' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date)" >> $GITHUB_STEP_SUMMARY
+          docker rm -f app-check
