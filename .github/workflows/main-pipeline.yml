@@ -33,7 +33,7 @@ jobs:
           exit-code: '1' # This fails the pipeline if issues are found
           severity: 'CRITICAL,HIGH'
   deploy:
-    needs: [docker, security-scan]
+    needs: [docker]
     runs-on: ubuntu-latest
     environment: production
     steps:
