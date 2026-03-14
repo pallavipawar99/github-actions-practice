@@ -1,12 +1,12 @@
 name: Main Pipeline
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 */12 * * *'  # Runs every 12 hours
+#   push:
+#     branches: [main]
+#   pull_request:
+#     branches: [main]
+#   schedule:
+#     - cron: '0 */12 * * *'  # Runs every 12 hours
   workflow_dispatch:       # Allows manual testing
 
 jobs:
