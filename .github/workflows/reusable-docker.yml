@@ -1,16 +1,12 @@
-name: Reusable Docker Build & Push
-
+name: Reusable Docker
 on:
   workflow_call:
     inputs:
       image_name:
-        description: 'Name of the Docker image (e.g., my-app)'
         required: true
         type: string
       tag:
-        description: 'Tag for the image (e.g., latest or v1.0.0)'
-        required: false
-        default: 'latest'
+        required: true
         type: string
     secrets:
       docker_username:
@@ -19,35 +15,22 @@ on:
         required: true
     outputs:
       image_url:
-        description: "The full URL of the pushed image"
-        value: ${{ jobs.docker-push.outputs.full_url }}
+        value: ${{ inputs.image_name }}:${{ inputs.tag }}
 
 jobs:
-  docker-push:
+  build:
     runs-on: ubuntu-latest
-    outputs:
-      full_url: ${{ steps.set-url.outputs.url }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
+      - uses: actions/checkout@v4
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKER_USERNAME }}
+          username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-
-      - name: Build and push
+      - name: Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: .github/workflows/Dockerfile
           push: true
-          tags: ${{ vars.DOCKER_USERNAME }}/${{ inputs.image_name }}:${{ inputs.tag }}
-
-      - name: Set Image URL Output
-        id: set-url
-        run: |
-          FULL_URL="${{ vars.DOCKER_USERNAME }}/${{ inputs.image_name }}:${{ inputs.tag }}"
-          echo "url=$FULL_URL" >> $GITHUB_OUTPUT
-          echo "Image successfully pushed to: $FULL_URL"
+          tags: |
+            ${{ inputs.image_name }}:latest
+            ${{ inputs.image_name }}:${{ inputs.tag }}

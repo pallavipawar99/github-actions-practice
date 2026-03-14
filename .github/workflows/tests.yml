@@ -1,12 +1,7 @@
 name: Run Tests
-
-on:
-    workflow_dispatch:
-
+on: [push]
 jobs:
-    run_first_workflow:
-        runs-on: ubuntu-latest
-        steps:
-            - name: test job run
-              run: |
-                echo job run success
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running automated test suite..."

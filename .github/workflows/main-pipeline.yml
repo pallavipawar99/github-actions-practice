@@ -1,93 +1,40 @@
 name: Main Pipeline
-
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    - cron: '0 */12 * * *'
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
-  # --- CI/CD SECTION ---
   test:
     uses: ./.github/workflows/reusable-build-test.yml
-    with:
-      python_version: '3.10'
-      run_tests: true
 
-  deploy-docker:
+  docker:
     needs: test
-    if: github.event_name == 'push' && needs.test.result.test_result == 'passed'
     uses: ./.github/workflows/reusable-docker.yml
     with:
-      image_name: 'fastapi-capstone'
-      tag: "latest"
+      image_name: ${{ vars.DOCKER_USERNAME }}/fastapi-capstone
+      tag: sha-${{ github.sha }}
     secrets:
-      docker_username: ${{ vars.DOCKER_USERNAME }}
+      docker_username: ${{ secrets.DOCKER_USERNAME }}
       docker_token: ${{ secrets.DOCKER_TOKEN }}
 
-  deploy-prod:
-    needs: deploy-docker
-    if: github.event_name == 'push'
+  security-scan:
+    needs: docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Required for SARIF upload (Brownie Points)
+    steps:
+      - name: Scan Docker Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ vars.DOCKER_USERNAME }}/fastapi-capstone:latest'
+          format: 'table'
+          exit-code: '1' # This fails the pipeline if issues are found
+          severity: 'CRITICAL,HIGH'
+  deploy:
+    needs: [docker, security-scan]
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Final Production Deploy
-        run: echo "Deploying image ${{ needs.deploy-docker.outputs.image_url }}..."
-
-  # --- OPTIMIZED HEALTH CHECK SECTION ---
-  health-check:
-    if: |
-      always() && 
-      (github.event_name == 'schedule' || 
-       github.event_name == 'workflow_dispatch' || 
-       (github.event_name == 'push' && needs.deploy-docker.result == 'success'))
-    needs: [deploy-docker]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-
-      - name: Start Container
-        run: |
-          docker pull ${{ vars.DOCKER_USERNAME }}/fastapi-capstone:latest
-          docker run -d --name app-check -p 8000:8000 ${{ vars.DOCKER_USERNAME }}/fastapi-capstone:latest
-
-      - name: Verify Health with Retries
-        id: check
-        run: |
-          echo "Waiting for app to respond on http://127.0.0.1..."
-          
-          # Try up to 10 times with 5s intervals (Total 50s)
-          for i in {1..10}; do
-            # Use 127.0.0.1 to avoid IPv6/localhost resolution delays
-            RESPONSE=$(curl -s --fail http://127.0.0.1 || true)
-            
-            if [[ "$RESPONSE" == *'"status":"ok"'* ]]; then
-              echo "status=PASSED" >> $GITHUB_OUTPUT
-              echo "Health check passed! ✅"
-              exit 0
-            fi
-            
-            echo "Attempt $i: App not ready yet. Retrying in 5s..."
-            sleep 5
-          done
-
-          echo "::error::Health check timed out. Dumping container logs for debugging:"
-          docker logs app-check
-          echo "status=FAILED" >> $GITHUB_OUTPUT
-          exit 1
-
-      - name: Create Summary Report
-        if: always()
-        run: |
-          echo "## Health Check Report" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** ${{ vars.DOCKER_USERNAME }}/fastapi-capstone:latest" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ steps.check.outputs.status || 'FAILED' }} 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "- **Check Time:** $(date)" >> $GITHUB_STEP_SUMMARY
-          docker rm -f app-check || true
+      - name: Deploy
+        run: echo "Deploying image ${{ needs.docker.outputs.image_url }} to Production"

@@ -1,58 +1,31 @@
-name: Reusable Build and Test
-
+name: Reusable Build & Test
 on:
   workflow_call:
     inputs:
       python_version:
-        description: 'Python version to use'
-        required: false
-        default: '3.9'
         type: string
+        default: '3.10'
       run_tests:
-        description: 'Whether to run pytest'
-        required: false
-        default: true
         type: boolean
+        default: true
     outputs:
       test_result:
-        description: "The result of the test step"
-        value: ${{ jobs.build-and-test.outputs.status }}
+        value: ${{ jobs.test.outputs.status }}
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
     outputs:
-      status: ${{ steps.set-output.outputs.result }}
+      status: ${{ steps.set-status.outputs.status }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5 # Upgraded to v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ inputs.python_version }}
-          cache: 'pip' # Automatically caches your dependencies
-
+          python_version: ${{ inputs.python_version }}
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install fastapi uvicorn httpx pytest
-
-      - name: Run tests
+        run: pip install -r requirements.txt
+      - name: Run Pytest
         if: ${{ inputs.run_tests }}
-        id: test-step
-        continue-on-error: true # Essential to reach the 'Set output' step on failure
-        run: python -m pytest app/test_app.py
-
-      - name: Set output result
-        id: set-output
-        shell: bash
-        run: |
-          # Use the 'outcome' of the previous step to determine pass/fail
-          if [ "${{ steps.test-step.outcome }}" == "success" ]; then
-            echo "result=passed" >> $GITHUB_OUTPUT
-            echo "Tests passed successfully."
-          else
-            echo "result=failed" >> $GITHUB_OUTPUT
-            echo "Tests failed. Capturing status for caller workflow."
-          fi
+        run: pytest
+      - id: set-status
+        run: echo "status=passed" >> $GITHUB_OUTPUT
