@@ -3,33 +3,32 @@ name: Main Pipeline
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
-  # Job 1: Call the reusable workflow
+  # 1. First, run your Build & Test
   call-build-and-test:
     uses: ./.github/workflows/reusable-build-test.yml
     with:
       python_version: '3.10'
       run_tests: true
 
-  # Job 2: Process the results
-  check-results:
+  # 2. Then, Build & Push Docker Image (Only if tests pass)
+  deploy-docker:
     needs: call-build-and-test
+    if: needs.call-build-and-test.outputs.test_result == 'passed'
+    uses: ./.github/workflows/reusable-docker.yml
+    with:
+      image_name: 'fastapi-capstone'
+      tag: 'latest'
+    secrets:
+      docker_username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      docker_token: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+  # 3. Optional: Check the final output
+  final-check:
+    needs: deploy-docker
     runs-on: ubuntu-latest
     steps:
-      - name: Print Test Status
-        run: |
-          echo "The reusable workflow reported: ${{ needs.call-build-and-test.outputs.test_result }}"
-
-      - name: Final Validation
-        # This step fails the pipeline if the reusable workflow output isn't 'passed'
-        if: ${{ needs.call-build-and-test.outputs.test_result != 'passed' }}
-        run: |
-          echo "::error::Tests failed in the reusable workflow. Stopping pipeline."
-          exit 1
-
-      - name: Success Message
-        if: ${{ needs.call-build-and-test.outputs.test_result == 'passed' }}
-        run: echo "Tests passed! Ready for the next stage."
+      - name: Show Image URL
+        run: | 
+            echo "Deployed to: ${{ needs.deploy-docker.outputs.image_url }}"
