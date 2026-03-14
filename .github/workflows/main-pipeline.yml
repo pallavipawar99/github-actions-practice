@@ -1,0 +1,23 @@
+name: Main Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # This job calls your reusable workflow
+  call-build-and-test:
+    uses: ./.github/workflows/reusable-build-test.yml
+    with:
+      python_version: '3.10'
+      run_tests: true
+
+  # You can then use the output in a following job
+  check-results:
+    needs: call-build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Test Status
+        run: echo "The reusable workflow reported: ${{ needs.call-build-and-test.outputs.test_result }}"
