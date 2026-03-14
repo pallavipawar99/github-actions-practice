@@ -42,7 +42,7 @@ jobs:
         id: test-step
         # continue-on-error allows us to capture the failure for the output
         continue-on-error: true
-        run: pytest test_app.py
+        run: python -m pytest test_app.py
 
       - name: Set output result
         id: set-output
