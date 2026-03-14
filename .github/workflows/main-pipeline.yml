@@ -8,30 +8,30 @@ on:
     types: [opened, synchronize]
 
 jobs:
-  # 1. Call the reusable build-test workflow (Runs for BOTH Push and PR)
+  # 1. First, run your Build & Test
   call-build-and-test:
     uses: ./.github/workflows/reusable-build-test.yml
     with:
       python_version: '3.10'
       run_tests: true
 
-  # 2. Build & Push Docker Image (ONLY for Push to main, NOT for PRs)
+  # 2. Then, Build & Push Docker Image (Only if tests pass)
   deploy-docker:
     needs: call-build-and-test
-    if: github.event_name == 'push' && needs.call-build-and-test.outputs.test_result == 'passed'
+    if: needs.call-build-and-test.outputs.test_result == 'passed'
     uses: ./.github/workflows/reusable-docker.yml
     with:
       image_name: 'fastapi-capstone'
       tag: 'latest'
-    secrets: inherit
+    secrets:
+      docker_username: ${{ vars.DOCKER_USERNAME }}
+      docker_token: ${{ secrets.DOCKER_TOKEN }}
 
-  # 3. PR Summary Comment (ONLY for Pull Requests)
-  pr-comment:
-    needs: call-build-and-test
-    if: github.event_name == 'pull_request'
+  # 3. Optional: Check the final output
+  final-check:
+    needs: deploy-docker
     runs-on: ubuntu-latest
     steps:
-      - name: Print PR Summary
-        run: |
-          echo "PR checks passed for branch: ${{ github.head_ref }}"
-          echo "Test Result: ${{ needs.call-build-and-test.outputs.test_result }}"
+      - name: Show Image URL
+        run: | 
+            echo "Deployed to: ${{ needs.deploy-docker.outputs.image_url }}"
