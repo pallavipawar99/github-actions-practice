@@ -1,0 +1,15 @@
+name: External Trigger Workflow
+
+on:
+  repository_dispatch:
+    types: [deploy-request]
+
+jobs:
+  external-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process External Request
+        run: |
+          echo "Deployment requested for environment: ${{ github.event.client_payload.environment }}"
+          echo "Full Payload: ${{ toJson(github.event.client_payload) }}"
+
