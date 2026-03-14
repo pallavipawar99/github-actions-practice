@@ -20,4 +20,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Print Test Status
-        run: echo "The reusable workflow reported: ${{ needs.call-build-and-test.outputs.test_result }}"
+        run: |
+            echo The reusable workflow reported: ${{ needs.call-build-and-test.outputs.test_result }}
