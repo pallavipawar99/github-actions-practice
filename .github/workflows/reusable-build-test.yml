@@ -42,7 +42,7 @@ jobs:
         if: ${{ inputs.run_tests }}
         id: test-step
         continue-on-error: true # Essential to reach the 'Set output' step on failure
-        run: python -m pytest .github/workflows/test_app.py
+        run: python -m pytest app/test_app.py
 
       - name: Set output result
         id: set-output
