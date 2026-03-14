@@ -21,8 +21,8 @@ jobs:
       image_name: 'fastapi-capstone'
       tag: 'latest'
     secrets:
-      docker_username: ${{ secrets.DOCKER_HUB_USERNAME }}
-      docker_token: ${{ secrets.DOCKER_HUB_TOKEN }}
+      docker_username: ${{ vars.DOCKER_USERNAME }}
+      docker_token: ${{ secrets.DOCKER_TOKEN }}
 
   # 3. Optional: Check the final output
   final-check:
