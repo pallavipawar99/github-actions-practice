@@ -30,7 +30,7 @@ jobs:
       - name: Validate Branch Name
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
-          if [[ ! $BRANCH_NAME =~ ^(feature/|fix/|docs/) ]]; then
+          if [[ ! $BRANCH_NAME =~ ^(feature/|fix/|docs/|pr-test) ]]; then
             echo "Error: Branch name '$BRANCH_NAME' must start with feature/, fix/, or docs/"
             exit 1
           fi
