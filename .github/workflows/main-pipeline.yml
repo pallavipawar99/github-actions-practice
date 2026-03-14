@@ -11,16 +11,15 @@ on:
 
 jobs:
   # --- CI/CD SECTION ---
-  call-build-and-test:
-    if: github.event_name != 'schedule'
+  test:
     uses: ./.github/workflows/reusable-build-test.yml
     with:
       python_version: '3.10'
       run_tests: true
 
   deploy-docker:
-    needs: call-build-and-test
-    if: github.event_name == 'push' && needs.call-build-and-test.outputs.test_result == 'passed'
+    needs: test
+    if: github.event_name == 'push' && needs.test.result.test_result == 'passed'
     uses: ./.github/workflows/reusable-docker.yml
     with:
       image_name: 'fastapi-capstone'
