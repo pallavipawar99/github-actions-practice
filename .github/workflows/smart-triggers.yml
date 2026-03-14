@@ -8,9 +8,9 @@ on:
     paths:
       - 'src/**'
       - 'app/**'
-    paths-ignore:
-      - '*.md'
-      - 'docs/**'
+    # paths-ignore:
+    #   - '*.md'
+    #   - 'docs/**'
 
 jobs:
   run-tests:
